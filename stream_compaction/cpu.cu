@@ -20,6 +20,15 @@ namespace StreamCompaction {
         void scan(int n, int *odata, const int *idata) {
             timer().startCpuTimer();
             // TODO
+
+            if (n <= 0) {
+                timer().endCpuTimer();
+                return;
+			}
+            odata[0] = 0;
+            for (int i = 1; i < n; i++) {
+                odata[i] = odata[i - 1] + idata[i - 1];
+            }
             timer().endCpuTimer();
         }
 
@@ -31,8 +40,15 @@ namespace StreamCompaction {
         int compactWithoutScan(int n, int *odata, const int *idata) {
             timer().startCpuTimer();
             // TODO
+            int counter = 0;
+            for (int i = 0; i < n; i++) {
+                if (idata[i] != 0) {
+                    odata[counter] = idata[i];
+                    counter++;
+                }
+            }
             timer().endCpuTimer();
-            return -1;
+            return counter;
         }
 
         /**
@@ -43,8 +59,39 @@ namespace StreamCompaction {
         int compactWithScan(int n, int *odata, const int *idata) {
             timer().startCpuTimer();
             // TODO
+
+            if (n <= 0) {
+                timer().endCpuTimer();
+                return 0;
+            }
+
+            int* mapped = new int[n];
+            int* scanned = new int[n];
+
+			//map to 0s and 1s
+            for (int i = 0; i < n; ++i) {
+                mapped[i] = (idata[i] == 0) ? 0 : 1;
+            }
+
+            // SCAN
+            scanned[0] = 0;
+            for (int i = 1; i < n; i++) {
+                scanned[i] = scanned[i - 1] + mapped[i - 1];
+            };
+
+			// get index of non-zero elements and from scanned array
+            for (int i = 0; i < n; ++i) {
+                if (mapped[i] == 1) {
+                    odata[scanned[i]] = idata[i];
+                }
+            }
+
+            int count = (n > 0) ? scanned[n - 1] + mapped[n - 1] : 0;
+
+            delete[] mapped;
+            delete[] scanned;
             timer().endCpuTimer();
-            return -1;
+            return count;
         }
     }
 }
