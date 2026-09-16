@@ -12,22 +12,34 @@ namespace StreamCompaction {
             return timer;
         }
 
-        __global__ void kernScanUp(int n, int two_d, int two_d1, int* data) {
+        __global__ void kernScanUp(
+            int n, int two_d, int two_d1, int activeThreads, int* data) {
 
             int thread = blockIdx.x * blockDim.x + threadIdx.x;
+            if (thread >= activeThreads) {
+                return;
+            }
 
-            int index = (thread + 1) * two_d1 - 1;
+            long long index =
+                (static_cast<long long>(thread) + 1LL) *
+                static_cast<long long>(two_d1) - 1LL;
 
             if (index < n) {
                 data[index] += data[index - two_d];
             }
         }
 
-        __global__ void kernScanDown(int n, int two_d, int two_d1, int* data) {
+        __global__ void kernScanDown(
+            int n, int two_d, int two_d1, int activeThreads, int* data) {
 
             int thread = blockIdx.x * blockDim.x + threadIdx.x;
+            if (thread >= activeThreads) {
+                return;
+            }
 
-            int index = (thread + 1) * two_d1 - 1;
+            long long index =
+                (static_cast<long long>(thread) + 1LL) *
+                static_cast<long long>(two_d1) - 1LL;
 
             if (index < n) {
                 int t = data[index - two_d];
@@ -78,7 +90,8 @@ namespace StreamCompaction {
                 int activeThreads = (paddedN + twod1 - 1) / twod1;
                 int blocks = (activeThreads + blockSize - 1) / blockSize;
 
-                kernScanUp <<<blocks, blockSize>>> (paddedN, twod, twod1, d_data);
+                kernScanUp <<<blocks, blockSize>>> (
+                    paddedN, twod, twod1, activeThreads, d_data);
             }
 
 			//set root to 0
@@ -96,7 +109,8 @@ namespace StreamCompaction {
                 int activeThreads = (paddedN + twod1 - 1) / twod1;
                 int blocks = (activeThreads + blockSize - 1) / blockSize;
 
-                kernScanDown <<<blocks, blockSize>>> (paddedN, twod, twod1, d_data);
+                kernScanDown <<<blocks, blockSize>>> (
+                    paddedN, twod, twod1, activeThreads, d_data);
             }
             
             timer().endGpuTimer();
@@ -173,7 +187,8 @@ namespace StreamCompaction {
                 int activeThreads = (paddedN + twod1 - 1) / twod1;
                 int blocks = (activeThreads + blockSize - 1) / blockSize;
 
-                kernScanUp << <blocks, blockSize >> > (paddedN, twod, twod1, d_data);
+                kernScanUp << <blocks, blockSize >> > (
+                    paddedN, twod, twod1, activeThreads, d_data);
             }
 
             //set root to 0
@@ -191,7 +206,8 @@ namespace StreamCompaction {
                 int activeThreads = (paddedN + twod1 - 1) / twod1;
                 int blocks = (activeThreads + blockSize - 1) / blockSize;
 
-                kernScanDown << <blocks, blockSize >> > (paddedN, twod, twod1, d_data);
+                kernScanDown << <blocks, blockSize >> > (
+                    paddedN, twod, twod1, activeThreads, d_data);
             }
 
             //scatter using d_data as index
