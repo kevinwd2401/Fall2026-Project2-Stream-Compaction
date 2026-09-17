@@ -79,7 +79,7 @@ namespace StreamCompaction {
             );
 
             timer().startGpuTimer();
-            const int blockSize = 128;
+            const int blockSize = 64;
 
 
             //up sweep
